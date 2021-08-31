@@ -487,7 +487,7 @@ def main():
     maintaining the communication client and the CarlaBridge object
     """
     rospy.init_node("carla_bridge", anonymous=True)
-    parameters = rospy.get_param('carla')
+    parameters = rospy.get_param('carla') #carla: 하위 파라미터들을 불러옴
     rospy.loginfo("Trying to connect to {host}:{port}".format(
         host=parameters['host'], port=parameters['port']))
 
