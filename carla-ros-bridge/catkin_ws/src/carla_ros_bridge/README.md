@@ -15,3 +15,6 @@
 
    * 실행파일 : carla_manual_control/launch/carla_manual_control.launch
         > 파라미터 : role_name
+
+### **python 파일**
+1. **bridge.py** : 동기모드인 경우 CarlaControl 타입의 "/carla/control" 토픽들을 subscribe하고 Pause, Play로 실행을 컨트롤할 수 있음. 또 하나씩 명령을 수행하도록 할 수도 있음. 전체적으로 actor를 생성하고 actor 데이터 토픽들을 publish하는 기능 수행.

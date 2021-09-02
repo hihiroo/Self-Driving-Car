@@ -32,7 +32,7 @@ class Communication(object):
         self.ros_timestamp = rospy.Time()
 
         # needed?
-        self.publishers['clock'] = rospy.Publisher(
+        self.publishers['clock'] = rospy.Publisher( # 'clock'이라는 Clock 데이터 타입의 토픽을 전송하는 퍼블리셔 생성
             'clock', Clock, queue_size=10)
         self.publishers['tf'] = rospy.Publisher(
             'tf', TFMessage, queue_size=100)

@@ -52,7 +52,7 @@ class CarlaRosBridge(object):
     Carla Ros bridge
     """
 
-    CARLA_VERSION = "0.9.6"
+    CARLA_VERSION = "0.9.6" # 최소 요구 버전
 
     def __init__(self, carla_world, params):
         """
@@ -80,22 +80,26 @@ class CarlaRosBridge(object):
         self.carla_settings = carla_world.get_settings()
 
         # workaround: settings can only applied within non-sync mode
-        if self.carla_settings.synchronous_mode:
-            self.carla_settings.synchronous_mode = False
-            carla_world.apply_settings(self.carla_settings)
+        if self.carla_settings.synchronous_mode: # 현재 world가 동기 모드이면
+            self.carla_settings.synchronous_mode = False # world 설정을 바꾸기 위해 비동기로 바꿈
+            carla_world.apply_settings(self.carla_settings) # world 설정 적용
 
+        # 파라미터 값으로 world 설정 변경
         rospy.loginfo("synchronous_mode: {}".format(self.parameters["synchronous_mode"]))
         self.carla_settings.synchronous_mode = self.parameters["synchronous_mode"]
         rospy.loginfo("fixed_delta_seconds: {}".format(self.parameters["fixed_delta_seconds"]))
-        self.carla_settings.fixed_delta_seconds = self.parameters["fixed_delta_seconds"]
+        self.carla_settings.fixed_delta_seconds = self.parameters["fixed_delta_seconds"] # 프레임 시간 간격(서버 연산 시간)
         carla_world.apply_settings(self.carla_settings)
 
-        self.comm = Communication()
-        self.update_lock = Lock()
+        # Carla와 통신하기 위한 Communication 인스턴스 생성 
+        # tf, time 토픽 퍼블리셔 생성
+        self.comm = Communication() 
+        
+        self.update_lock = Lock() # update CS 관리를 위한 Lock 인스턴스 생성
 
         self.carla_control_queue = queue.Queue()
 
-        self.status_publisher = CarlaStatusPublisher(
+        self.status_publisher = CarlaStatusPublisher( # CarlaStatus 타입의 토픽을 전송, 동기모드와 시간 간격을 설정하는 인스턴스 생성 
             self.carla_settings.synchronous_mode,
             self.carla_settings.fixed_delta_seconds)
 
@@ -106,22 +110,22 @@ class CarlaRosBridge(object):
         self._expected_ego_vehicle_control_command_ids = []
         self._expected_ego_vehicle_control_command_ids_lock = Lock()
 
-        if self.carla_settings.synchronous_mode:
+        if self.carla_settings.synchronous_mode: # 동기모드이면
             self.carla_run_state = CarlaControl.PLAY
 
             self.carla_control_subscriber = \
-                rospy.Subscriber("/carla/control", CarlaControl,
-                                 lambda control: self.carla_control_queue.put(control.command))
+                rospy.Subscriber("/carla/control", CarlaControl, # CarlaControl타입의 토픽을 수신하는 Subscriber 생성. 
+                                 lambda control: self.carla_control_queue.put(control.command)) # 토픽에 담겨있는 command를 큐에 넣음
 
-            self.synchronous_mode_update_thread = Thread(target=self._synchronous_mode_update)
+            self.synchronous_mode_update_thread = Thread(target=self._synchronous_mode_update) # 커맨드 처리하는 스레드 생성
             self.synchronous_mode_update_thread.start()
         else:
             self.timestamp_last_run = 0.0
 
-            self.update_actors_queue = queue.Queue(maxsize=1)
+            self.update_actors_queue = queue.Queue(maxsize=1) # 하나만 처리할 수 있는 업데이트 큐 생성
 
             # start thread to update actors
-            self.update_actor_thread = Thread(target=self._update_actors_thread)
+            self.update_actor_thread = Thread(target=self._update_actors_thread) # 업데이트 스레드 시작
             self.update_actor_thread.start()
 
             # create initially existing actors
@@ -174,7 +178,7 @@ class CarlaRosBridge(object):
         command = None
 
         # get last command
-        while not self.carla_control_queue.empty():
+        while not self.carla_control_queue.empty(): # 마지막 명령만 command에 저장하고 큐를 비움
             command = self.carla_control_queue.get()
 
         while command is not None and not rospy.is_shutdown():
@@ -199,8 +203,8 @@ class CarlaRosBridge(object):
         """
         execution loop for synchronous mode
         """
-        while not self.shutdown.is_set():
-            self.process_run_state()
+        while not self.shutdown.is_set(): # 중간에 들어오는 작업도 처리할 수 있도록 루프 실행
+            self.process_run_state() # 멈춤, 재생, 한 단계씩 실행 명령 처리
 
             if self.parameters['synchronous_mode_wait_for_vehicle_control_command']:
                 # fill list of available ego vehicles
@@ -437,7 +441,7 @@ class CarlaRosBridge(object):
         :return:
         """
         rospy.on_shutdown(self.on_shutdown)
-        rospy.spin()
+        rospy.spin() # 토픽을 받을 때까지 기다림
 
     def on_shutdown(self):
         """
@@ -486,29 +490,35 @@ def main():
     main function for carla simulator ROS bridge
     maintaining the communication client and the CarlaBridge object
     """
-    rospy.init_node("carla_bridge", anonymous=True)
-    parameters = rospy.get_param('carla') #carla: 하위 파라미터들을 불러옴
+    rospy.init_node("carla_bridge", anonymous=True) # carla_bridge 라는 노드 생성
+    parameters = rospy.get_param('carla') # carla/ 하위 파라미터들을 불러옴 (launch 파일 참고)
     rospy.loginfo("Trying to connect to {host}:{port}".format(
         host=parameters['host'], port=parameters['port']))
 
     carla_bridge = None
     carla_world = None
     carla_client = None
-    try:
-        carla_client = carla.Client(
+    try: 
+        carla_client = carla.Client( # 클라이언트 생성
             host=parameters['host'],
             port=parameters['port'])
-        carla_client.set_timeout(2.0)
+        carla_client.set_timeout(2.0) # 커넥션 제한시간 설정
 
-        carla_world = carla_client.get_world()
+        carla_world = carla_client.get_world() # world 인스턴스 생성
 
+        # 만약 파라미터 중에 town이 있고 현재 world의 맵이 파라미터 값과 다르다면
         if "town" in parameters and carla_world.get_map().name != parameters["town"]:
             rospy.loginfo("Loading new town: {} (previous: {})".format(
                 parameters["town"], carla_world.get_map().name))
-            carla_world = carla_client.load_world(parameters["town"])
+            carla_world = carla_client.load_world(parameters["town"]) # 파라미터 값으로 맵 변경
+            '''
+            tick()은 동기 모드에서만 영향을 미침. 
+            서버에 다음 프레임으로 바뀌는 시기를 알려주고 새로 시작되는 프레임의 ID를 반환함
+            보통 world가 actor를 생성할 때까지 기다렸다가 시뮬레이터에 신호를 보내기 위해 사용함.
+            '''
             carla_world.tick()
 
-        carla_bridge = CarlaRosBridge(carla_client.get_world(), parameters)
+        carla_bridge = CarlaRosBridge(carla_client.get_world(), parameters) # CarlaRosBridge 인스턴스 생성
         carla_bridge.run()
     finally:
         del carla_world
