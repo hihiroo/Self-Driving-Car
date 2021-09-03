@@ -62,6 +62,12 @@ from carla import ColorConverter as cc
 from agents.navigation.roaming_agent import RoamingAgent
 from agents.navigation.basic_agent import BasicAgent
 
+SPAWN_X = 265.2
+SPAWN_Y = -360.4
+SPAWN_Z = 1.2
+DESTI_X = 385.0
+DESTI_Y = -70.0
+DESTI_Z = 0.0
 
 # ==============================================================================
 # -- Global functions ----------------------------------------------------------
@@ -96,6 +102,11 @@ class World(object):
         self._weather_presets = find_weather_presets()
         self._weather_index = 0
         self._actor_filter = actor_filter
+        self.set_weather()
+        
+        self.friction = None
+        self.set_friction()
+
         self.restart()
         self.world.on_tick(hud.on_world_tick)
         self.recording_enabled = False
@@ -120,9 +131,19 @@ class World(object):
             self.destroy()
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
         while self.player is None:
-            spawn_points = self.map.get_spawn_points()
-            spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            #spawn_points = self.map.get_spawn_points()
+            spawn_point = carla.Transform()
+            
+            #spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            spawn_point.location.x = SPAWN_X
+            spawn_point.location.y = SPAWN_Y
+            spawn_point.location.z = SPAWN_Z
+    
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
+            #print(spawn_point)
+            # self.player.set_location(carla.Location(x=SPAWN_X,y=SPAWN_Y,z=SPAWN_Z))
+        
+            
         # Set up the sensors.
         self.collision_sensor = CollisionSensor(self.player, self.hud)
         self.lane_invasion_sensor = LaneInvasionSensor(self.player, self.hud)
@@ -158,10 +179,44 @@ class World(object):
             self.collision_sensor.sensor,
             self.lane_invasion_sensor.sensor,
             self.gnss_sensor.sensor,
-            self.player]
+            self.player,
+            self.friction]
         for actor in actors:
             if actor is not None:
                 actor.destroy()
+
+    # set weather
+    def set_weather(self):
+        weather = carla.WeatherParameters(
+            cloudiness= 0.0,
+            precipitation = 0.0,
+            precipitation_deposits = 0.0,
+            sun_altitude_angle=70.0)
+        self.world.set_weather(weather)
+
+    def set_friction(self):
+
+        # Find Trigger Friction Blueprint
+        friction_bp = self.world.get_blueprint_library().find('static.trigger.friction')
+        self.friction = friction_bp
+
+        print("friction %s" %self.friction)
+        extent = carla.Location(1500.0, 1500.0, 1500.0)
+
+        friction_bp.set_attribute('friction', str(0.0))
+        friction_bp.set_attribute('extent_x', str(extent.x))
+        friction_bp.set_attribute('extent_y', str(extent.y))
+        friction_bp.set_attribute('extent_z', str(extent.z))
+
+        # Spawn Trigger Friction
+        print("spawn trigger")
+        transform = carla.Transform()
+        transform.location = carla.Location(375.7, -284.7, 0.0)
+        self.world.spawn_actor(friction_bp, transform)
+
+        print("end spawn trigger")
+        # Optional for visualizing trigger
+        self.world.debug.draw_box(box=carla.BoundingBox(transform.location, extent * 1e-2), rotation=transform.rotation, life_time=100, thickness=0.5, color=carla.Color(r=255,g=0,b=0))
 
 
 # ==============================================================================
@@ -602,10 +657,11 @@ def game_loop(args):
             agent = RoamingAgent(world.player)
         else:
             agent = BasicAgent(world.player)
-            spawn_point = world.map.get_spawn_points()[0]
-            agent.set_destination((spawn_point.location.x,
-                                   spawn_point.location.y,
-                                   spawn_point.location.z))
+            spawn_point = carla.Transform()
+            agent.set_destination((DESTI_X,
+                                   DESTI_Y,
+                                   DESTI_Z))
+            print(spawn_point)
 
         clock = pygame.time.Clock()
         while True:
@@ -661,8 +717,8 @@ def main():
     argparser.add_argument(
         '--filter',
         metavar='PATTERN',
-        default='vehicle.*',
-        help='actor filter (default: "vehicle.*")')
+        default='vehicle.audi.a2',
+        help='actor filter (default: "vehicle.audi.a2")')
     argparser.add_argument("-a", "--agent", type=str,
                            choices=["Roaming", "Basic"],
                            help="select which agent to run",
