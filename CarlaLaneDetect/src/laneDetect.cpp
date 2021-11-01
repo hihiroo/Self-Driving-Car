@@ -9,17 +9,21 @@ using namespace cv;
 
 struct Subscribe_And_Publish{
     ros::NodeHandle n;
-    ros::Subscriber getImage;
-    ros::Publisher pubLaneImage;
+    image_transport::ImageTransport it;
+    image_transport::Subscriber getImage;
+    image_transport::Publisher pubLaneImage;
     bool isRun;
 
-    Subscribe_And_Publish(bool isrun): isRun(isrun){
-        getImage = n.subscribe("/carla/ego_vehicle/camera/rgb/front/image_color", 10, &Subscribe_And_Publish::callback, this);
-        pubLaneImage = n.advertise<sensor_msgs::Image>("laneImage",10);
+    Subscribe_And_Publish(bool isrun): isRun(isrun), it(n){
+        getImage = it.subscribe("/carla/ego_vehicle/camera/rgb/front/image_color", 1, &Subscribe_And_Publish::callback, this);
+        pubLaneImage = it.advertise("/laneImage",1);
     }
 
-    void callback(const sensor_msgs::Image img){
-        pubLaneImage.publish(img);
+    void callback(const sensor_msgs::ImageConstPtr& img){
+        // sensor_msgs/Image -> opencv Mat type images
+        cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8); // img를 인코딩하여 opencv Image타입으로 변환
+        Canny(cv_ptr->image, cv_ptr->image, 100, 200);
+        pubLaneImage.publish(cv_ptr->toImageMsg()); // opencv Mat type -> sensor_msgs/Image type
     }
 };
 
