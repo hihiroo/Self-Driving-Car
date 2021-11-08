@@ -30,3 +30,9 @@ target_link_libraries(laneDetect
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
+
+add_executable(saveImage src/saveImage.cpp)
+target_link_libraries(saveImage
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
