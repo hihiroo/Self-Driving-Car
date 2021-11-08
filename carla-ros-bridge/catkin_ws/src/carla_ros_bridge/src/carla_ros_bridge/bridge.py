@@ -153,6 +153,8 @@ class CarlaRosBridge(object):
                                                       communication=self.comm,
                                                       actor_list=self.actors))
 
+        self.carla_world.set_weather(carla.WeatherParameters.ClearNoon)
+
     def destroy(self):
         """
         Function to destroy this object.
