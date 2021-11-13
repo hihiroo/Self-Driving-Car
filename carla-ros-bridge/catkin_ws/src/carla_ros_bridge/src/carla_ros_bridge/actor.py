@@ -138,23 +138,21 @@ class Actor(PseudoActor):
 
     def get_traffic_light_status(self):
         status = CarlaTrafficLightStatus()
+        
+        traffic_light = self.carla_actor.get_traffic_light()
+        state = traffic_light.get_state()
+        status.id = self.carla_actor_id
 
-        if self.carla_actor.is_at_traffic_light():
-            traffic_light = self.carla_actor.get_traffic_light()
-            state = traffic_light.get_state()
-            status.id = self.carla_actor_id
-
-            if state == TrafficLightState.Red:
-                status.state = CarlaTrafficLightStatus.RED
-            elif state == TrafficLightState.Green:
-                status.state = CarlaTrafficLightStatus.GREEN
-            elif state == TrafficLightState.Yellow:
-                status.state = CarlaTrafficLightStatus.YELLOW
-            elif state == TrafficLightState.Off:
-                status.state = CarlaTrafficLightStatus.OFF
-            else:
-                status.state = CarlaTrafficLightStatus.UNKNOWN
-        else: status.state = CarlaTrafficLightStatus.UNKNOWN
+        if state == TrafficLightState.Red:
+            status.state = CarlaTrafficLightStatus.RED
+        elif state == TrafficLightState.Green:
+            status.state = CarlaTrafficLightStatus.GREEN
+        elif state == TrafficLightState.Yellow:
+            status.state = CarlaTrafficLightStatus.YELLOW
+        elif state == TrafficLightState.Off:
+            status.state = CarlaTrafficLightStatus.OFF
+        else:
+            status.state = CarlaTrafficLightStatus.UNKNOWN
         return status  
 
     def get_marker(self):
