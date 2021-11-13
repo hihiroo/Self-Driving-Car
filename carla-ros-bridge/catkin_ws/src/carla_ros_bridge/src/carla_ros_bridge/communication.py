@@ -29,12 +29,12 @@ class Communication(object):
         self.msgs_to_publish = []
         self.publishers = {}
         self.subscribers = {}
-        self.ros_timestamp = rospy.Time()
+        self.ros_timestamp = rospy.Time() # Time 인스턴스 생성
 
         # needed?
         self.publishers['clock'] = rospy.Publisher( # 'clock'이라는 Clock 데이터 타입의 토픽을 전송하는 퍼블리셔 생성
             'clock', Clock, queue_size=10)
-        self.publishers['tf'] = rospy.Publisher(
+        self.publishers['tf'] = rospy.Publisher( # TFMessage타입의 'tf'토픽을 전송하는 퍼블리셔 생성
             'tf', TFMessage, queue_size=100)
 
     def send_msgs(self):

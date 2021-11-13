@@ -69,6 +69,7 @@ class Vehicle(TrafficParticipant):
         """
         self.publish_transform(self.get_ros_transform())
         self.publish_marker()
+        self.publish_message('/carla/traffic_status_at_vehicle', self.get_traffic_light_status())
         super(Vehicle, self).update(frame, timestamp)
 
     def get_marker_color(self):  # pylint: disable=no-self-use

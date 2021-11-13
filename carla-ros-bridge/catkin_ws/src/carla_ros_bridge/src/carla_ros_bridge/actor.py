@@ -14,6 +14,7 @@ import numpy as np
 from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import ColorRGBA
 from visualization_msgs.msg import Marker
+from carla_msgs.msg import CarlaTrafficLightStatus
 
 from carla_ros_bridge.pseudo_actor import PseudoActor
 import carla_ros_bridge.transforms as trans
@@ -134,6 +135,15 @@ class Actor(PseudoActor):
         color.b = 255
         return color
 
+    def get_traffic_light_status(self):
+        if self.carla_actor.is_at_traffic_light():
+            traffic_light = self.carla_actor.get_traffic_light().get_status()
+        else:
+            traffic_light = CarlaTrafficLightStatus()
+            traffic_light.state = CarlaTrafficLightStatus.UNKNOWN
+        return traffic_light
+            
+
     def get_marker(self):
         """
         Helper function to create a ROS visualization_msgs.msg.Marker for the actor
@@ -164,7 +174,7 @@ class Actor(PseudoActor):
 
         marker.pose = trans.carla_location_to_pose(
             self.carla_actor.bounding_box.location)
-        marker.scale.x = self.carla_actor.bounding_box.extent.x * 2.0
+        marker.scale.x = self.carla_asctor.bounding_box.extent.x * 2.0
         marker.scale.y = self.carla_actor.bounding_box.extent.y * 2.0
         marker.scale.z = self.carla_actor.bounding_box.extent.z * 2.0
         self.publish_message('/carla/marker', marker)
