@@ -15,6 +15,7 @@ from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import ColorRGBA
 from visualization_msgs.msg import Marker
 from carla_msgs.msg import CarlaTrafficLightStatus
+from carla import TrafficLightState
 
 from carla_ros_bridge.pseudo_actor import PseudoActor
 import carla_ros_bridge.transforms as trans
@@ -136,13 +137,25 @@ class Actor(PseudoActor):
         return color
 
     def get_traffic_light_status(self):
+        status = CarlaTrafficLightStatus()
+
         if self.carla_actor.is_at_traffic_light():
-            traffic_light = self.carla_actor.get_traffic_light().get_status()
-        else:
-            traffic_light = CarlaTrafficLightStatus()
-            traffic_light.state = CarlaTrafficLightStatus.UNKNOWN
-        return traffic_light
-            
+            traffic_light = self.carla_actor.get_traffic_light()
+            state = traffic_light.get_state()
+            status.id = self.carla_actor_id
+
+            if state == TrafficLightState.Red:
+                status.state = CarlaTrafficLightStatus.RED
+            elif state == TrafficLightState.Green:
+                status.state = CarlaTrafficLightStatus.GREEN
+            elif state == TrafficLightState.Yellow:
+                status.state = CarlaTrafficLightStatus.YELLOW
+            elif state == TrafficLightState.Off:
+                status.state = CarlaTrafficLightStatus.OFF
+            else:
+                status.state = CarlaTrafficLightStatus.UNKNOWN
+        else: status.state = CarlaTrafficLightStatus.UNKNOWN
+        return status  
 
     def get_marker(self):
         """
@@ -174,7 +187,7 @@ class Actor(PseudoActor):
 
         marker.pose = trans.carla_location_to_pose(
             self.carla_actor.bounding_box.location)
-        marker.scale.x = self.carla_asctor.bounding_box.extent.x * 2.0
+        marker.scale.x = self.carla_actor.bounding_box.extent.x * 2.0
         marker.scale.y = self.carla_actor.bounding_box.extent.y * 2.0
         marker.scale.z = self.carla_actor.bounding_box.extent.z * 2.0
         self.publish_message('/carla/marker', marker)
