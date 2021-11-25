@@ -173,7 +173,7 @@ struct Subscribe_And_Publish{
 
 int main(int argc, char **argv){
     cout << "Start laneDetect node!\n";
-    ros::init(argc, argv, "laneDetect");
+    ros::init(argc, argv, "lanedetect");
 
     Subscribe_And_Publish laneDetect(1);
     ros::spin();

@@ -1,0 +1,6 @@
+<!-- -->
+<launch>
+  <include file="$(find carla_ros_bridge)/launch/carla_ros_bridge_with_example_ego_vehicle.launch"></include>
+  <include file="$(find darknet_ros)/launch/darknet_ros.launch"></include>
+  <node pkg="carlaVision" name="lanedetect" type="lanedetect" output="screen"/>
+</launch>
